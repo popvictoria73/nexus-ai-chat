@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexusChat | Futuristic AI Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            light: '#a7f3d0',
+                            DEFAULT: '#10b981',
+                            dark: '#065f46',
+                        },
+                        secondary: {
+                            light: '#1e293b',
+                            DEFAULT: '#0f172a',
+                            dark: '#020617',
+                        }
+                    },
+                    fontFamily: {
+                        'sans': ['"Inter"', 'system-ui', 'sans-serif'],
+                        'mono': ['"Fira Code"', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease;
+        }
+        
+        .chat-container {
+            height: calc(100vh - 80px);
+        }
+        
+        .message {
+            max-width: 80%;
+        }
+        
+        .typing-indicator span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #10b981;
+            margin-right: 4px;
+            animation: bounce 1.5s infinite ease-in-out;
+        }
+        
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        
+        .glow {
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+        }
+        
+        .theme-switch {
+            transition: all 0.3s ease;
+        }
+        
+        .message-content pre {
+            background-color: rgba(15, 23, 42, 0.7);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            overflow-x: auto;
+        }
+        
+        .message-content code {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .message-content p {
+            margin-bottom: 0.8rem;
+        }
+        
+        .message-content p:last-child {
+            margin-bottom: 0;
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #10b981;
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #0d9e6e;
+        }
+    </style>
+</head>
+<body class="bg-secondary-light dark:bg-secondary-dark text-gray-200">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Main Chat Interface -->
+        <div class="flex-1 flex flex-col max-w-4xl mx-auto w-full">
+            <!-- Header -->
+            <header class="bg-secondary-DEFAULT dark:bg-secondary-dark border-b border-gray-800 py-4 px-6 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-full bg-primary-light flex items-center justify-center text-secondary-dark font-bold">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h1 class="text-xl font-bold text-primary-light">NexusChat</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="themeSwitch" class="theme-switch p-2 rounded-full hover:bg-gray-800 text-gray-400 hover:text-primary-light">
+                        <i class="fas fa-moon dark:hidden"></i>
+                        <i class="fas fa-sun hidden dark:inline"></i>
+                    </button>
+                </div>
+            </header>
+            
+            <!-- Chat Messages -->
+            <div id="chatMessages" class="chat-container flex-1 overflow-y-auto p-6 space-y-6">
+                <!-- Welcome message -->
+                <div class="message ml-auto">
+                    <div class="bg-primary-light text-secondary-dark rounded-tl-2xl rounded-tr-2xl rounded-bl-2xl px-4 py-3">
+                        <p>Hello! I'm your AI assistant. How can I help you today?</p>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1 text-right">Just now</div>
+                </div>
+            </div>
+            
+            <!-- Input Area -->
+            <div class="border-t border-gray-800 p-4 bg-secondary-DEFAULT dark:bg-secondary-dark">
+                <form id="messageForm" class="flex space-x-3">
+                    <div class="flex-1 relative">
+                        <textarea id="messageInput" rows="1" class="w-full bg-gray-800 border border-gray-700 rounded-2xl px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-primary-light focus:border-transparent resize-none" placeholder="Type your message..." autofocus></textarea>
+                        <button type="button" id="sendButton" class="absolute right-3 bottom-4 text-gray-400 hover:text-primary-light">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </form>
+                <div class="text-xs text-gray-400 mt-2 text-center">
+                    <span>NexusChat results are AI-generated; review before deciding. Press Shift+Enter for new line.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const chatMessages = document.getElementById('chatMessages');
+        const messageForm = document.getElementById('messageForm');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const themeSwitch = document.getElementById('themeSwitch');
+        
+        // Configuration - Hardcoded API settings
+        const config = {
+            apiUrl: 'https://openrouter.ai/api/v1/chat/completions',
+            apiKey: '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', // You need to add your API key here
+            model: 'deepseek/deepseek-chat-v3-0324:free',
+            darkMode: true
+        };
+
+        // deepseek/deepseek-chat-v3-0324:free
+
+        // deepseek/deepseek-chat:free
+        
+        // Apply theme
+        function applyTheme(isDark) {
+            if (isDark) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+        
+        // Add message to chat
+        function addMessage(content, isUser = false) {
+            const messageDiv = document.createElement('div');
+            const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            if (isUser) {
+                messageDiv.className = 'message ml-auto';
+                messageDiv.innerHTML = `
+                    <div class="bg-primary-light text-secondary-dark rounded-tl-2xl rounded-tr-2xl rounded-bl-2xl px-4 py-3">
+                        <div class="message-content">${content}</div>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1 text-right">${timestamp}</div>
+                `;
+            } else {
+                messageDiv.className = 'message mr-auto';
+                messageDiv.innerHTML = `
+                    <div class="bg-gray-800 text-gray-200 rounded-tl-2xl rounded-tr-2xl rounded-br-2xl px-4 py-3">
+                        <div class="message-content">${content}</div>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">${timestamp}</div>
+                `;
+            }
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        // Show typing indicator
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message mr-auto';
+            typingDiv.id = 'typingIndicator';
+            typingDiv.innerHTML = `
+                <div class="bg-gray-800 text-gray-200 rounded-tl-2xl rounded-tr-2xl rounded-br-2xl px-4 py-3">
+                    <div class="typing-indicator">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+            `;
+            
+            chatMessages.appendChild(typingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        // Hide typing indicator
+        function hideTypingIndicator() {
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+        
+        // Format response content
+        function formatResponse(content) {
+            // Convert markdown code blocks to HTML
+            content = content.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+            
+            // Convert inline code
+            content = content.replace(/`([^`]+)`/g, '<code>$1</code>');
+            
+            // Convert links
+            content = content.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" class="text-primary-light hover:underline">$1</a>');
+            
+            // Convert paragraphs
+            content = content.split('\n\n').map(paragraph => {
+                if (!paragraph.startsWith('<pre>') && !paragraph.startsWith('<code>') && !paragraph.startsWith('<a ')) {
+                    return `<p>${paragraph}</p>`;
+                }
+                return paragraph;
+            }).join('');
+            
+            return content;
+        }
+        
+        // Send message to API
+        async function sendMessage(message) {
+            if (!message.trim()) return;
+            
+            addMessage(message, true);
+            messageInput.value = '';
+            
+            showTypingIndicator();
+            
+            try {
+                const response = await fetch(config.apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${config.apiKey}`,
+                        'HTTP-Referer': window.location.href,
+                        'X-Title': 'NexusChat'
+                    },
+                    body: JSON.stringify({
+                        model: config.model,
+                        messages: [{ role: 'user', content: message }]
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API request failed with status ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const reply = data.choices[0].message.content;
+                
+                hideTypingIndicator();
+                addMessage(formatResponse(reply), false);
+            } catch (error) {
+                hideTypingIndicator();
+                addMessage(`Sorry, I encountered an error: ${error.message}`, false);
+                console.error('API Error:', error);
+            }
+        }
+        
+        // Event Listeners
+        messageForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const message = messageInput.value.trim();
+            if (message) {
+                sendMessage(message);
+            }
+        });
+        
+        sendButton.addEventListener('click', () => {
+            const message = messageInput.value.trim();
+            if (message) {
+                sendMessage(message);
+            }
+        });
+        
+        messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                const message = messageInput.value.trim();
+                if (message) {
+                    sendMessage(message);
+                }
+            }
+        });
+        
+        themeSwitch.addEventListener('click', () => {
+            const isDark = !document.documentElement.classList.contains('dark');
+            config.darkMode = isDark;
+            applyTheme(isDark);
+        });
+        
+        // Initialize
+        applyTheme(config.darkMode);
+        
+        // Add welcome message if no messages exist
+        if (chatMessages.children.length === 0) {
+            addMessage("Hello! I'm your AI assistant. How can I help you today?", false);
+        }
+    </script>
+</body>
+</html>
